@@ -1,0 +1,37 @@
+// Prisma Schema for Nested Todo App
+// Database: PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+// Tdo user auth modal
+model User {
+  id       Int      @id @default(autoincrement())
+  email    String   @unique
+  password String
+  name     String?
+  todos    Todo[]
+}
+
+// Todo Model - Supports unlimited nesting
+model Todo {
+  id        Int      @id @default(autoincrement())
+  text      String   // Todo ka text/title
+  done      Boolean  @default(false) // Completed hai ya nahi
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+    userId   Int?
+  user     User?    @relation(fields: [userId], references: [id])
+
+  // Self-referential relationship for nesting
+  parentId  Int?     // Agar ye kisi ka child hai to parent ka ID
+  parent    Todo?    @relation("TodoToSubTodos", fields: [parentId], references: [id], onDelete: Cascade)
+  subTodos  Todo[]   @relation("TodoToSubTodos") // Iske saare children
+
+  @@index([parentId]) // Fast queries ke liye
+}

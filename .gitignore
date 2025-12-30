@@ -1,0 +1,103 @@
+# ===================================
+# Node.js / React / Vite (todo, todoBackend)
+# ===================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+dist/
+dist-ssr/
+build/
+*.local
+coverage/
+.nyc_output/
+
+# ===================================
+# Python / FastAPI (todo-fast-api)
+# ===================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+cython_debug/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ===================================
+# Environment Variables (All Projects)
+# ===================================
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+
+# ===================================
+# IDE & Editors
+# ===================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ===================================
+# OS Files
+# ===================================
+.DS_Store
+Thumbs.db
+
+# ===================================
+# Logs
+# ===================================
+*.log
+logs/
+
+# ===================================
+# Database Files
+# ===================================
+*.db
+*.sqlite
+*.sqlite3
+
+# ===================================
+# Docker
+# ===================================
+docker-compose.override.yml
+
+# ===================================
+# Prisma (todoBackend)
+# ===================================
+/todoBackend/generated/prisma
+
+# ===================================
+# Misc
+# ===================================
+.cache/
+.temp/
+.tmp/
