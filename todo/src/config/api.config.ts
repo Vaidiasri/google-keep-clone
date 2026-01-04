@@ -4,7 +4,7 @@
 // Backend Selector Flag
 // false = Node.js (Fastify) running on port 8080
 // true = Python (FastAPI) running on port 8000
-export const USE_FASTAPI = true; // Default to Python Backend for this workspace
+export const USE_FASTAPI = true; // Using Python Backend (todo-fast-api)
 
 // Backend ka base URL logic
 // Agar USE_FASTAPI true hai to Python URL, nahi to Node URL

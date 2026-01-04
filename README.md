@@ -12,6 +12,8 @@ A production-ready, enterprise-grade Todo application featuring **Policy-Based A
 - [Tech Stack](#-tech-stack)
 - [Project Structure](#-project-structure)
 - [Getting Started](#-getting-started)
+- [Troubleshooting](#-troubleshooting)
+- [Quick Start Checklist](#-quick-start-checklist)
 - [Environment Variables](#-environment-variables)
 - [API Documentation](#-api-documentation)
 - [Security Features](#-security-features)
@@ -254,12 +256,180 @@ createdb todo_db
 # The application will create tables automatically on first run
 ```
 
-#### 5. Create Super Admin (Optional)
+#### 5. Create Test Admin User
+
+The application comes with a script to create a test admin user for quick setup:
 
 ```bash
 cd todo-fast-api
-python scripts/create_super_admin.py
+python scripts/create_test_admin.py
 ```
+
+**Default Test Admin Credentials:**
+
+```
+Email:    admin@test.com
+Password: admin123
+Role:     ADMIN
+MFA:      Disabled
+```
+
+> ⚠️ **Security Note**: These are test credentials for development only. Change them in production!
+
+#### 6. Switch Backend (Optional)
+
+The frontend can connect to either Python (FastAPI) or Node.js (Fastify) backend:
+
+**Edit `todo/src/config/api.config.ts`:**
+
+```typescript
+// For Python Backend (Port 8000)
+export const USE_FASTAPI = true;
+
+// For Node.js Backend (Port 8080)
+export const USE_FASTAPI = false;
+```
+
+---
+
+## 🔧 Troubleshooting
+
+### Common Issues and Solutions
+
+#### 1. **`ts-node-dev` not found (Node.js Backend)**
+
+**Error:**
+
+```
+'ts-node-dev' is not recognized as an internal or external command
+```
+
+**Solution:**
+
+```bash
+cd todoBackend
+npm install --save-dev ts-node-dev
+```
+
+#### 2. **Prisma Client Not Initialized (Node.js Backend)**
+
+**Error:**
+
+```
+@prisma/client did not initialize yet. Please run "prisma generate"
+```
+
+**Solution:**
+
+```bash
+cd todoBackend
+npx prisma generate
+npx prisma migrate dev  # If migrations needed
+```
+
+#### 3. **Database Connection Failed**
+
+**Error:**
+
+```
+Could not connect to database
+```
+
+**Solution:**
+
+- Verify PostgreSQL is running
+- Check `DATABASE_URL` in `.env` file
+- Ensure database exists: `createdb todo_db`
+- Test connection: `psql -U your_user -d todo_db`
+
+#### 4. **Login Fails with "Invalid credentials"**
+
+**Possible Causes:**
+
+- Wrong backend selected in `api.config.ts`
+- User doesn't exist in the database
+- Password mismatch
+
+**Solution:**
+
+```bash
+# Create/reset test admin
+cd todo-fast-api
+python scripts/create_test_admin.py
+
+# Verify backend is running
+curl http://localhost:8000/  # Python
+curl http://localhost:8080/ping  # Node.js
+
+# Check frontend is pointing to correct backend
+# Edit todo/src/config/api.config.ts
+```
+
+#### 5. **CORS Errors**
+
+**Error:**
+
+```
+Access to fetch at 'http://localhost:8000' from origin 'http://localhost:5173' has been blocked by CORS policy
+```
+
+**Solution:**
+
+- Backend CORS is already configured for `*` in development
+- If still facing issues, check backend logs
+- Ensure backend is running on correct port
+
+#### 6. **Port Already in Use**
+
+**Error:**
+
+```
+EADDRINUSE: address already in use :::8000
+```
+
+**Solution:**
+
+```bash
+# Find process using the port
+# Windows
+netstat -ano | findstr :8000
+taskkill /PID <process_id> /F
+
+# Linux/Mac
+lsof -ti:8000 | xargs kill -9
+```
+
+#### 7. **MFA Setup Issues**
+
+If you don't want MFA during development:
+
+```bash
+# Create admin without MFA
+cd todo-fast-api
+python scripts/create_test_admin.py  # MFA disabled by default
+```
+
+Or disable MFA for existing user:
+
+```sql
+UPDATE "User" SET mfa_enabled = false WHERE email = 'your@email.com';
+```
+
+---
+
+## 📋 Quick Start Checklist
+
+Use this checklist to ensure everything is set up correctly:
+
+- [ ] PostgreSQL installed and running
+- [ ] Database created (`createdb todo_db`)
+- [ ] Python backend dependencies installed (`pip install -r requirements.txt`)
+- [ ] Frontend dependencies installed (`npm install`)
+- [ ] Environment variables configured (`.env` files)
+- [ ] Test admin user created (`python scripts/create_test_admin.py`)
+- [ ] Backend running on port 8000 (Python) or 8080 (Node.js)
+- [ ] Frontend running on port 5173
+- [ ] Can login with test credentials (`admin@test.com` / `admin123`)
 
 ---
 
