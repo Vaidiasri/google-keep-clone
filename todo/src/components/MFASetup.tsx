@@ -29,11 +29,11 @@ const MFASetup = ({ tempToken, onSuccess }: MFASetupProps) => {
     // Initiate Setup and get QR Code
     const fetchSetup = async () => {
       try {
-        // We typically attach tempToken to headers
-        apiClient.defaults.headers.common[
-          "Authorization"
-        ] = `Bearer ${tempToken}`;
-        const res = await apiClient.post("/auth/mfa/setup");
+        const res = await apiClient.post(
+          "/auth/mfa/setup",
+          {},
+          { headers: { Authorization: `Bearer ${tempToken}` } }
+        );
         setQrCode(res.data.qr_code);
         setSecret(res.data.secret);
         setStep("SCAN");

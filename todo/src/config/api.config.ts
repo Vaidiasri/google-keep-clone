@@ -1,30 +1,58 @@
-// API Configuration - Sare API URLs yaha centralized hain
-// Environment variables se BASE_URL le rahe hain, agar nahi hai to localhost use karenge
+// API Configuration — supports Fastify, FastAPI, or hybrid (both at once)
 
-// Backend Selector Flag
-// false = Node.js (Fastify) running on port 8080
-// true = Python (FastAPI) running on port 8000
-export const USE_FASTAPI = true; // Using Python Backend (todo-fast-api)
+export type BackendMode = 'fastify' | 'fastapi' | 'hybrid'
 
-// Backend ka base URL logic
-// Agar USE_FASTAPI true hai to Python URL, nahi to Node URL
-// Environment variables config se le rahe hain
-const NODE_URL = import.meta.env.VITE_API_URL_NODE || 'http://localhost:8080';
-const PYTHON_URL = import.meta.env.VITE_API_URL_PYTHON || 'http://localhost:8000';
+const NODE_URL = import.meta.env.VITE_API_URL_NODE || 'http://localhost:8080'
+const PYTHON_URL = import.meta.env.VITE_API_URL_PYTHON || 'http://localhost:8000'
 
-const DEFAULT_URL = USE_FASTAPI ? PYTHON_URL : NODE_URL;
-export const API_BASE_URL = DEFAULT_URL;
+/** @deprecated use BACKEND_MODE — kept for backward compatibility */
+export const USE_FASTAPI = import.meta.env.VITE_USE_FASTAPI === 'true'
 
-// Sare API endpoints ek jagah define kiye hain
+function resolveBackendMode(): BackendMode {
+  const mode = import.meta.env.VITE_BACKEND_MODE as string | undefined
+  if (mode === 'fastify' || mode === 'fastapi' || mode === 'hybrid') return mode
+  // Legacy: VITE_USE_FASTAPI=true → all requests on FastAPI
+  if (USE_FASTAPI) return 'fastapi'
+  // Legacy: VITE_AI_USE_FASTAPI=true → hybrid without renaming env var
+  if (import.meta.env.VITE_AI_USE_FASTAPI === 'true') return 'hybrid'
+  return 'fastify'
+}
+
+export const BACKEND_MODE = resolveBackendMode()
+
+/** Todos, auth, admin — Fastify in fastify/hybrid, FastAPI in fastapi mode */
+export const API_BASE_URL =
+  BACKEND_MODE === 'fastapi' ? PYTHON_URL : NODE_URL
+
+/** AI routes — FastAPI in fastapi/hybrid, Fastify in fastify-only mode */
+export const AI_BASE_URL =
+  BACKEND_MODE === 'fastify' ? NODE_URL : PYTHON_URL
+
+/** Fastify URL used as AI fallback when hybrid + FastAPI is unreachable */
+export const AI_FALLBACK_URL = NODE_URL
+
+export const BACKEND_LABELS: Record<BackendMode, string> = {
+  fastify: 'Fastify (Node :8080)',
+  fastapi: 'FastAPI (Python :8000)',
+  hybrid: 'Hybrid — Fastify todos + FastAPI AI',
+}
+
 export const API_ENDPOINTS = {
-  // Health check endpoint
   PING: '/ping',
-  
-  // Todo endpoints
+
   TODOS: {
-    GET_ALL: '/todos',           // Sare todos get karne ke liye
-    CREATE: '/todos',            // Naya todo create karne ke liye
-    UPDATE: (id: number) => `/todos/${id}`,  // Todo update karne ke liye
-    DELETE: (id: number) => `/todos/${id}`,  // Todo delete karne ke liye
-  }
+    GET_ALL: '/todos',
+    CREATE: '/todos',
+    UPDATE: (id: number) => `/todos/${id}`,
+    DELETE: (id: number) => `/todos/${id}`,
+  },
+
+  AI: {
+    STATUS: '/ai/status',
+    SPLIT: '/ai/split',
+    COACH: '/ai/coach',
+    BOSS_LORE: '/ai/boss-lore',
+    BRIEFING: '/ai/briefing',
+    PARSE_TASK: '/ai/parse-task',
+  },
 }

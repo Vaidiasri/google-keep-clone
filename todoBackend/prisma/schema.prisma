@@ -11,11 +11,32 @@ datasource db {
 }
 // Tdo user auth modal
 model User {
-  id       Int      @id @default(autoincrement())
-  email    String   @unique
-  password String
-  name     String?
-  todos    Todo[]
+  id          Int               @id @default(autoincrement())
+  email       String            @unique
+  password    String
+  name        String?
+  role        String            @default("USER")
+  mfa_enabled Boolean           @default(false)
+  todos       Todo[]
+  groups      UserGroupMember[]
+}
+
+model UserGroup {
+  id          Int               @id @default(autoincrement())
+  name        String            @unique
+  description String?
+  color       String            @default("#6366f1")
+  createdAt   DateTime          @default(now())
+  members     UserGroupMember[]
+}
+
+model UserGroupMember {
+  userId  Int
+  groupId Int
+  user    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group   UserGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@id([userId, groupId])
 }
 
 // Todo Model - Supports unlimited nesting

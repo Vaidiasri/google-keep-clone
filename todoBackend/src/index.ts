@@ -5,6 +5,9 @@ import cors from '@fastify/cors'
 // Todo routes import kar rahe hain
 import todoRoutes from './routes/todoRoutes'
 import authRoutes from './routes/authRoutes'
+import aiRoutes from './routes/aiRoutes'
+import adminRoutes from './routes/adminRoutes'
+import { ensureAdminSchema } from './lib/ensureSchema'
 import fastifyJwt, { FastifyJWT } from 'fastify-jwt' // Correct import for fastify-jwt
 import 'dotenv/config' // Dotenv config load kar rahe hain
 
@@ -16,7 +19,7 @@ const server = fastify({ logger: true })
 server.register(cors, { 
   origin: true,  // Sabko allow kar rahe hain (development ke liye)
   // Production mein specific origin dena chahiye: origin: 'http://localhost:5173'
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],  // Sare HTTP methods allow kar rahe hain
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],  // Sare HTTP methods allow kar rahe hain
   allowedHeaders: ['Content-Type', 'Authorization'],  // Headers jo allow hain
   credentials: true  // Cookies aur credentials allow kar rahe hain
 })
@@ -78,9 +81,16 @@ server.register(authRoutes)
 // Ye sare /todos endpoints ko handle karega
 server.register(todoRoutes)
 
+// AI routes (heuristic + optional Gemini via GEMINI_API_KEY)
+server.register(aiRoutes)
+
+// Admin routes (requires ADMIN role)
+server.register(adminRoutes)
+
 // Server start karne ka function
 const start = async () => {
   try {
+    await ensureAdminSchema()
     // Port 8080 par server listen karna shuru karo
     await server.listen({ port: 8080, host: '0.0.0.0' })
     console.log(' Server started on http://localhost:8080')

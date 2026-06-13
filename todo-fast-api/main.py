@@ -7,6 +7,7 @@ import modal.todo as models
 import modal.user as user_models
 import schema.todo as schemas
 import schema.user as user_schemas
+import schema.ai as ai_schemas
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from utils import (
@@ -14,6 +15,7 @@ from utils import (
     verify_password,
     create_access_token,
     get_current_user,
+    get_ai_user,
     get_db,
     # RoleChecker, # We will use PolicyChecker now
 )
@@ -448,6 +450,91 @@ def delete_todo(
     cache.clear_all()  # Invalidate Cache
 
     return {"ok": True}
+
+
+# --- AI Routes (proxy — API keys stay on server) ---
+
+
+@app.post("/ai/split", response_model=ai_schemas.AISplitResponse, tags=["AI"])
+def ai_split_route(
+    body: ai_schemas.AISplitRequest,
+    current_user: user_models.User = Depends(get_ai_user),
+):
+    from services.ai_rate_limit import check_rate_limit, increment_rate_limit
+    from services.llm_client import ai_split
+
+    check_rate_limit(current_user.id)
+    increment_rate_limit(current_user.id)
+    return ai_split(body.text)
+
+
+@app.post("/ai/coach", response_model=ai_schemas.AICoachResponse, tags=["AI"])
+def ai_coach_route(
+    body: ai_schemas.AICoachRequest,
+    current_user: user_models.User = Depends(get_ai_user),
+):
+    from services.ai_rate_limit import check_rate_limit, increment_rate_limit
+    from services.llm_client import ai_coach
+
+    check_rate_limit(current_user.id)
+    increment_rate_limit(current_user.id)
+    try:
+        return ai_coach(body.todos, body.focusTaskId)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@app.post("/ai/boss-lore", response_model=ai_schemas.AIBossLoreResponse, tags=["AI"])
+def ai_boss_lore_route(
+    body: ai_schemas.AIBossLoreRequest,
+    current_user: user_models.User = Depends(get_ai_user),
+):
+    from services.ai_rate_limit import check_rate_limit, increment_rate_limit
+    from services.llm_client import ai_boss_lore
+
+    check_rate_limit(current_user.id)
+    increment_rate_limit(current_user.id)
+    return ai_boss_lore(body.taskText, body.subtaskCount, body.progress)
+
+
+@app.post("/ai/briefing", response_model=ai_schemas.AIBriefingResponse, tags=["AI"])
+def ai_briefing_route(
+    body: ai_schemas.AIBriefingRequest,
+    current_user: user_models.User = Depends(get_ai_user),
+):
+    from services.ai_rate_limit import check_rate_limit, increment_rate_limit
+    from services.llm_client import ai_briefing
+
+    check_rate_limit(current_user.id)
+    increment_rate_limit(current_user.id)
+    return ai_briefing(body.todos, body.userName)
+
+
+@app.post("/ai/parse-task", response_model=ai_schemas.AIParseTaskResponse, tags=["AI"])
+def ai_parse_task_route(
+    body: ai_schemas.AIParseTaskRequest,
+    current_user: user_models.User = Depends(get_ai_user),
+):
+    from services.ai_rate_limit import check_rate_limit, increment_rate_limit
+    from services.llm_client import ai_parse_task
+
+    check_rate_limit(current_user.id)
+    increment_rate_limit(current_user.id)
+    return ai_parse_task(body.input)
+
+
+@app.get("/ai/status", tags=["AI"])
+def ai_status(current_user: user_models.User = Depends(get_ai_user)):
+    from services.ai_rate_limit import get_remaining, DEFAULT_LIMIT
+    from services.llm_client import is_ai_configured, AI_PROVIDER, AI_MODEL
+
+    return {
+        "configured": is_ai_configured(),
+        "provider": AI_PROVIDER,
+        "model": AI_MODEL,
+        "remainingToday": get_remaining(current_user.id),
+        "dailyLimit": DEFAULT_LIMIT,
+    }
 
 
 if __name__ == "__main__":

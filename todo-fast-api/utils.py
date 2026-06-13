@@ -14,8 +14,8 @@ load_dotenv()
 
 # Configuration (Isse .env se hi lena behtar hai production mei!)
 SECRET_KEY = os.getenv(
-    "JWT_SECRET", "super-secret-key-for-dev"
-)  # Ye secret kisi ko mat batana
+    "JWT_SECRET", "supersecretkey"
+)  # Must match todoBackend JWT_SECRET for hybrid mode
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 5760  # 4 Days (4 * 24 * 60)
 
@@ -68,19 +68,52 @@ async def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        # Token decode karke email nikal rahe hain
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        email: str = payload.get("sub")
+        email: str = payload.get("sub") or payload.get("email")
         if email is None:
             raise credentials_exception
     except JWTError:
         raise credentials_exception
 
-    # Email se user ko DB mein dhundo
     user = db.query(models.User).filter(models.User.email == email).first()
     if user is None:
         raise credentials_exception
     return user
+
+
+async def get_ai_user(
+    token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
+):
+    """JWT auth for AI routes — accepts tokens from Fastify or FastAPI login."""
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("sub") or payload.get("email")
+        if email is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if user is not None:
+        return user
+
+    # Hybrid mode: trust Fastify-issued token (id in payload, user may only exist in Prisma DB)
+    token_id = payload.get("id")
+    if token_id is not None:
+        class _TokenUser:
+            def __init__(self, uid: int, em: str):
+                self.id = int(uid)
+                self.email = em
+                self.role = "user"
+
+        return _TokenUser(token_id, email)
+
+    raise credentials_exception
 
 
 class RoleChecker:

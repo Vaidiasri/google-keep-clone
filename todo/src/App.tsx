@@ -1,3 +1,4 @@
+import React from "react";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import NestedTodo from "./page/NestedTodo";
 import LogIn from "./page/LogIn";
@@ -8,7 +9,7 @@ import { Toaster } from "./components/ui/toaster";
 
 // Protected Route Component
 // Agar user logged in nahi hai to Login page par bhej dega
-const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading } = useAuth();
 
   if (isLoading) return <div>Loading...</div>;
@@ -21,7 +22,7 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
 };
 
 // Public Route (Login/Register accessible only if NOT logged in)
-const PublicRoute = ({ children }: { children: JSX.Element }) => {
+const PublicRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading } = useAuth();
 
   if (isLoading) return <div>Loading...</div>;

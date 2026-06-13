@@ -30,10 +30,14 @@ This is a comprehensive full-stack application that demonstrates enterprise-leve
 
 - **Advanced PBAC System**: Policy-based access control with attribute evaluation
 - **Multi-Factor Authentication**: TOTP-based MFA with QR code generation
-- **Role-Based Access**: Admin, User, and Guest roles with granular permissions
-- **Nested Todo Management**: Hierarchical todo organization with subtasks
-- **Real-time Caching**: Two-layer caching (Identity + Resource) for performance
-- **Concurrency Control**: ETag-based optimistic locking to prevent lost updates
+- **Role-Based Access**: Admin and User roles with granular permissions
+- **Nested Todo Management**: Hierarchical todos with drag-and-drop board/list views
+- **Today's Focus**: Priority-sorted dashboard for what to work on next
+- **Fun Stack**: Boss battles, Focus Roulette, completion bursts, Smart Split
+- **AI Stack**: Focus Coach, Daily Briefing, Boss Lore, AI Smart Split
+- **Theme Studio**: Custom neon/glass presets with full-app theming
+- **Admin Console**: User CRUD, groups, and cross-user task visibility
+- **Hybrid Backend**: Fastify for todos/auth, FastAPI for AI (recommended)
 
 ---
 
@@ -52,16 +56,33 @@ This is a comprehensive full-stack application that demonstrates enterprise-leve
 
 - ✅ Create, Read, Update, Delete todos
 - ✅ Nested todo structure (parent-child relationships)
-- ✅ Progress tracking
+- ✅ Board view, list view, and Today's Focus dashboard
+- ✅ Drag-and-drop reordering and per-task priority
+- ✅ Progress tracking with sidebar stats
 - ✅ User-specific todo isolation
-- ✅ Admin oversight capabilities
+
+### Fun & AI Features
+
+- ✅ Boss Battle mode (HP tied to subtask progress)
+- ✅ Focus Roulette with optional AI Coach recommendations
+- ✅ Completion burst animations
+- ✅ Smart Split (regex + AI) for bullet-list task creation
+- ✅ Daily AI Briefing and Boss Lore
+- ✅ Natural-language task parsing
+
+### Theme & UX
+
+- ✅ Theme Studio with custom presets (neon, glass, gradients)
+- ✅ Light / dark / system modes
+- ✅ Keyboard shortcuts (`G+F` focus, `G+B` board, `G+L` list, etc.)
+- ✅ Consistent theming on main app and Admin Console
 
 ### Admin Features
 
-- ✅ User management dashboard
-- ✅ Role assignment and modification
-- ✅ User deletion capabilities
-- ✅ System-wide todo visibility
+- ✅ Admin Console at `/admin` (Users, Groups, All Tasks tabs)
+- ✅ User CRUD with role and group assignment
+- ✅ View any user's task tree
+- ✅ Filter all tasks by user or group
 
 ### Performance & Security
 
@@ -79,20 +100,20 @@ This project follows a **microservices-inspired architecture** with clear separa
 
 ```
 ┌─────────────────┐      ┌──────────────────┐      ┌─────────────────┐
-│                 │      │                  │      │                 │
-│  React Frontend │─────▶│  FastAPI Backend │─────▶│  PostgreSQL DB  │
-│   (Vite + TS)   │      │   (Python 3.x)   │      │                 │
-│                 │      │                  │      │                 │
-└─────────────────┘      └──────────────────┘      └─────────────────┘
-                                  │
-                                  │
-                         ┌────────▼────────┐
-                         │                 │
-                         │  Policy Engine  │
-                         │  (PBAC System)  │
-                         │                 │
-                         └─────────────────┘
+│  React Frontend │─────▶│ Fastify Backend  │─────▶│  PostgreSQL DB  │
+│   (Vite + TS)   │      │  todos · auth    │      │  (Prisma)       │
+│   TaskFlow      │      │  admin · :8080   │      │                 │
+└────────┬────────┘      └──────────────────┘      └─────────────────┘
+         │
+         │  AI routes (hybrid mode)
+         ▼
+┌──────────────────┐      ┌─────────────────┐
+│  FastAPI Backend │─────▶│  PostgreSQL DB  │
+│  AI · PBAC · :8000│     │  (SQLAlchemy)   │
+└──────────────────┘      └─────────────────┘
 ```
+
+**Hybrid mode (recommended):** todos, auth, and admin go to Fastify; AI endpoints go to FastAPI with automatic fallback to Fastify if Python is down.
 
 ### Backend Architecture (FastAPI)
 
@@ -156,21 +177,28 @@ This project follows a **microservices-inspired architecture** with clear separa
 
 ```
 frontend/
-├── todo/                          # React Frontend
+├── todo/                          # React Frontend (TaskFlow)
 │   ├── src/
-│   │   ├── components/           # Reusable components
-│   │   │   └── MFASetup.tsx     # MFA configuration component
-│   │   ├── context/             # React Context providers
-│   │   │   └── AuthContext.tsx  # Authentication state
-│   │   ├── page/                # Page components
-│   │   │   ├── AdminUsers.tsx   # Admin user management
-│   │   │   ├── LogIn.tsx        # Login page
-│   │   │   ├── Register.tsx     # Registration page
-│   │   │   └── NestedTodo.tsx   # Todo management
-│   │   ├── App.tsx              # Root component
-│   │   └── main.tsx             # Entry point
-│   ├── package.json
-│   └── vite.config.ts
+│   │   ├── components/
+│   │   │   ├── admin/           # Admin Console tabs
+│   │   │   ├── ai/              # Briefing, coach, NL preview
+│   │   │   ├── fun/             # Roulette, boss HP, settings
+│   │   │   ├── ui/              # shadcn/ui primitives
+│   │   │   └── ThemeStudio.tsx
+│   │   ├── context/             # AuthContext, ThemeContext
+│   │   ├── hooks/               # Priority, shortcuts, fun/AI hooks
+│   │   ├── page/
+│   │   │   ├── NestedTodo.tsx   # Main task board
+│   │   │   ├── AdminUsers.tsx   # Admin Console
+│   │   │   ├── LogIn.tsx
+│   │   │   └── Register.tsx
+│   │   ├── services/            # todo, admin, ai API clients
+│   │   ├── config/api.config.ts # Backend mode & URLs
+│   │   ├── App.tsx
+│   │   └── main.tsx
+│   ├── README.md
+│   ├── FUN_STACK_PLAN.md
+│   └── package.json
 │
 ├── todo-fast-api/                # Python FastAPI Backend
 │   ├── modal/                   # Database models
@@ -256,39 +284,52 @@ createdb todo_db
 # The application will create tables automatically on first run
 ```
 
-#### 5. Create Test Admin User
+#### 5. Start Fastify Backend (todos, auth, admin)
 
-The application comes with a script to create a test admin user for quick setup:
+```bash
+cd todoBackend
+npm install
+npx prisma generate
+npm run dev
+```
+
+Runs on **http://localhost:8080**
+
+#### 6. Create Admin User (Fastify)
+
+```bash
+cd todoBackend
+npm run create-admin
+# Default: admin@test.com / admin123
+```
+
+Or for the Python backend:
 
 ```bash
 cd todo-fast-api
 python scripts/create_test_admin.py
 ```
 
-**Default Test Admin Credentials:**
+> ⚠️ **Security Note**: Default credentials are for development only. Change them in production!
 
+#### 7. Configure Backend Mode
+
+Edit `todo/.env`:
+
+```env
+# Recommended when both backends are running
+VITE_BACKEND_MODE=hybrid
+VITE_API_URL_NODE=http://localhost:8080
+VITE_API_URL_PYTHON=http://localhost:8000
 ```
-Email:    admin@test.com
-Password: admin123
-Role:     ADMIN
-MFA:      Disabled
-```
 
-> ⚠️ **Security Note**: These are test credentials for development only. Change them in production!
+| Mode | Todos & Auth | AI |
+| --- | --- | --- |
+| `fastify` | Fastify `:8080` | Fastify |
+| `fastapi` | FastAPI `:8000` | FastAPI |
+| `hybrid` | Fastify `:8080` | FastAPI `:8000` |
 
-#### 6. Switch Backend (Optional)
-
-The frontend can connect to either Python (FastAPI) or Node.js (Fastify) backend:
-
-**Edit `todo/src/config/api.config.ts`:**
-
-```typescript
-// For Python Backend (Port 8000)
-export const USE_FASTAPI = true;
-
-// For Node.js Backend (Port 8080)
-export const USE_FASTAPI = false;
-```
+See [todo/README.md](./todo/README.md) for frontend-specific docs.
 
 ---
 
@@ -438,7 +479,9 @@ Use this checklist to ensure everything is set up correctly:
 ### Frontend (`/todo/.env`)
 
 ```env
-VITE_API_BASE_URL=http://localhost:8000
+VITE_BACKEND_MODE=hybrid
+VITE_API_URL_NODE=http://localhost:8080
+VITE_API_URL_PYTHON=http://localhost:8000
 ```
 
 ### Backend (`/todo-fast-api/.env`)
@@ -491,11 +534,24 @@ Once the backend is running, visit:
 - `DELETE /todos/{id}` - Delete todo
 - `GET /todos/{id}/children` - Get nested todos
 
-#### Admin
+#### Admin (Fastify — `:8080`)
 
-- `GET /admin/users` - Get all users
-- `PUT /admin/users/{id}/role` - Update user role
-- `DELETE /admin/users/{id}` - Delete user
+- `GET /admin/users` — List users with groups and task counts
+- `POST /admin/users` — Create user
+- `PATCH /admin/users/:id` — Update user, role, groups, password
+- `DELETE /admin/users/:id` — Delete user and their tasks
+- `GET /admin/users/:id/todos` — User's task tree
+- `GET /admin/todos` — All tasks (filter by `userId` or `groupId`)
+- `GET/POST/PATCH/DELETE /admin/groups` — Group CRUD
+- `PUT /admin/groups/:id/members` — Assign group members
+
+#### AI (FastAPI — `:8000` in hybrid mode)
+
+- `POST /ai/split` — Smart Split
+- `POST /ai/coach` — Focus Coach recommendation
+- `POST /ai/briefing` — Daily briefing
+- `POST /ai/boss-lore` — Boss taunt/lore
+- `POST /ai/parse-task` — Natural-language task parsing
 
 ---
 
@@ -567,8 +623,10 @@ See [DEPLOY.md](./DEPLOY.md) for detailed deployment instructions including:
 
 ## 📖 Additional Documentation
 
-- [IAM Architecture Research](./todo-fast-api/README_IAM.md) - Deep dive into PBAC implementation
-- [Deployment Guide](./DEPLOY.md) - Docker Hub deployment instructions
+- [TaskFlow Frontend README](./todo/README.md) — features, shortcuts, backend modes
+- [Fun & AI Stack Plan](./todo/FUN_STACK_PLAN.md) — feature spec and sprint plan
+- [IAM Architecture Research](./todo-fast-api/README_IAM.md) — PBAC deep dive
+- [Deployment Guide](./DEPLOY.md) — Docker Hub deployment instructions
 
 ---
 

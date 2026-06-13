@@ -18,9 +18,22 @@ export class AuthController {
       // Here using fastify instance attached to request for jwt signing if available, 
       // but standard pattern usually puts token generation in controller or service.
       // Since fastify-jwt is a plugin, 'server.jwt.sign' is available on the request.server or request.jwt
-      const token = request.server.jwt.sign({ id: user.id, email: user.email })
+      const token = request.server.jwt.sign({
+        sub: user.email,
+        id: user.id,
+        email: user.email,
+      })
 
-      return reply.status(201).send({ token, user: { id: user.id, email: user.email, name: user.name } })
+      return reply.status(201).send({
+        token,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          mfa_enabled: user.mfa_enabled,
+        },
+      })
     } catch (error: any) {
       if (error.message === 'User already exists') {
         return reply.status(400).send({ error: error.message })
@@ -37,8 +50,21 @@ export class AuthController {
   ) {
     try {
       const user = await authService.login(request.body)
-      const token = request.server.jwt.sign({ id: user.id, email: user.email })
-      return reply.send({ token, user: { id: user.id, email: user.email, name: user.name } })
+      const token = request.server.jwt.sign({
+        sub: user.email,
+        id: user.id,
+        email: user.email,
+      })
+      return reply.send({
+        token,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          mfa_enabled: user.mfa_enabled,
+        },
+      })
     } catch (error: any) {
       if (error.message === 'Invalid email or password') {
         return reply.status(401).send({ error: error.message })
