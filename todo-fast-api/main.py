@@ -2,6 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session, joinedload
 from typing import List, Any
+import os
 from database import create_db
 import modal.todo as models
 import modal.user as user_models
@@ -44,12 +45,16 @@ async def custom_http_exception_handler(request: Request, exc: HTTPException):
     )
 
 
-# CORS Middleware setup kar rahe hain taaki Frontend hamare API ko call kar sake
-# "allow_origins=['*']" ka matlab hai kahin se bhi request aa sakti hai (Dev ke liye theek hai)
+# CORS — set CORS_ORIGINS=https://app.example.com,http://localhost (comma-separated; * = allow all)
+_cors_raw = os.getenv("CORS_ORIGINS", "*")
+_cors_origins = ["*"] if _cors_raw.strip() == "*" else [
+    o.strip() for o in _cors_raw.split(",") if o.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=_cors_origins,
+    allow_credentials=_cors_raw.strip() != "*",
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -60,8 +65,12 @@ create_db()
 
 @app.get("/", tags=["Health"])
 def home():
-    # Bas check karne ke liye ki server zinda hai ya nahi
     return {"message": "FastAPI Logic Backend is Running"}
+
+
+@app.get("/health", tags=["Health"])
+def health():
+    return {"status": "ok"}
 
 
 # --- Auth Routes (Login/Signup) ---

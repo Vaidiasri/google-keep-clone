@@ -14,14 +14,16 @@ import 'dotenv/config' // Dotenv config load kar rahe hain
 // Fastify server instance bana rahe hain with logging enabled
 const server = fastify({ logger: true })
 
-// CORS register kar rahe hain
-// Ye frontend ko allow karega backend se baat karne ke liye
-server.register(cors, { 
-  origin: true,  // Sabko allow kar rahe hain (development ke liye)
-  // Production mein specific origin dena chahiye: origin: 'http://localhost:5173'
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],  // Sare HTTP methods allow kar rahe hain
-  allowedHeaders: ['Content-Type', 'Authorization'],  // Headers jo allow hain
-  credentials: true  // Cookies aur credentials allow kar rahe hain
+// CORS — set CORS_ORIGINS=https://app.example.com,http://localhost in production
+const corsOrigins = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean)
+  : true
+
+server.register(cors, {
+  origin: corsOrigins,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
 })
 
 server.register(fastifyJwt, {

@@ -623,6 +623,8 @@ See [DEPLOY.md](./DEPLOY.md) for detailed deployment instructions including:
 
 ## 📖 Additional Documentation
 
+- [AWS Deployment Plan](./DEPLOY_AWS.md) — Docker, ECS Fargate, GitHub Actions CI/CD
+- [AWS Infrastructure Setup](./infra/README.md) — Phase 2 step-by-step (RDS, ECS, ALB, OIDC)
 - [TaskFlow Frontend README](./todo/README.md) — features, shortcuts, backend modes
 - [Fun & AI Stack Plan](./todo/FUN_STACK_PLAN.md) — feature spec and sprint plan
 - [IAM Architecture Research](./todo-fast-api/README_IAM.md) — PBAC deep dive

@@ -1,25 +1,75 @@
-version: '3.8'
-
 services:
-  backend:
-    build: ./todoBackend
-    image: my-fastify-backend
+  postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-todo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-todo}
+      POSTGRES_DB: ${POSTGRES_DB:-todo}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-todo} -d ${POSTGRES_DB:-todo}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  fastify:
+    build:
+      context: ./todoBackend
+      dockerfile: Dockerfile
+    image: taskflow-fastify
+    restart: unless-stopped
     ports:
       - "8080:8080"
     environment:
-      - DATABASE_URL=${DATABASE_URL}
-      - JWT_SECRET=${JWT_SECRET}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    restart: always
+      DATABASE_URL: postgresql://${POSTGRES_USER:-todo}:${POSTGRES_PASSWORD:-todo}@postgres:5432/${POSTGRES_DB:-todo}
+      JWT_SECRET: ${JWT_SECRET:-supersecretkey}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      AI_MODEL: ${AI_MODEL:-gemini-2.0-flash}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost,http://localhost:80}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  fastapi:
+    build:
+      context: ./todo-fast-api
+      dockerfile: Dockerfile
+    image: taskflow-fastapi
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-todo}:${POSTGRES_PASSWORD:-todo}@postgres:5432/${POSTGRES_DB:-todo}
+      JWT_SECRET: ${JWT_SECRET:-supersecretkey}
+      AI_PROVIDER: ${AI_PROVIDER:-gemini}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      AI_MODEL: ${AI_MODEL:-gemini-2.0-flash}
+      AI_MAX_REQUESTS_PER_USER_PER_DAY: ${AI_MAX_REQUESTS_PER_USER_PER_DAY:-50}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost,http://localhost:80}
+    depends_on:
+      fastify:
+        condition: service_healthy
 
   frontend:
-    build: ./todo
-    image: my-frontend
+    build:
+      context: ./todo
+      dockerfile: Dockerfile
+      args:
+        VITE_BACKEND_MODE: ${VITE_BACKEND_MODE:-hybrid}
+        VITE_API_URL_NODE: ${VITE_API_URL_NODE:-http://localhost:8080}
+        VITE_API_URL_PYTHON: ${VITE_API_URL_PYTHON:-http://localhost:8000}
+    image: taskflow-frontend
+    restart: unless-stopped
     ports:
-      - "5173:5173"
-    environment:
-      - VITE_API_BASE_URL=http://localhost:8080
+      - "80:80"
     depends_on:
-      - backend
-    restart: always
+      - fastify
+      - fastapi
+
+volumes:
+  pgdata:

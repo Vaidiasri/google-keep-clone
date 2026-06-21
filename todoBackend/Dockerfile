@@ -1,40 +1,38 @@
-# Stage 1: Build TypeScript code
-FROM node:18-alpine AS builder
+# Stage 1: build TypeScript + Prisma client
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Package files copy karo
 COPY package*.json ./
 COPY tsconfig.json ./
+RUN npm ci
 
-# Dependencies install (dev bhi chahiye tsc ke liye)
-RUN npm install
+COPY prisma ./prisma
+COPY src ./src
 
-# Saara code copy karo
-COPY . .
-
-# TypeScript compile karo (dist folder mein output aayega generally)
 RUN npx prisma generate
 RUN npm run build
 
-# Stage 2: Production image (sirf JS + production deps)
-FROM node:18-alpine
+# Stage 2: production runtime
+FROM node:20-alpine
 
 WORKDIR /app
 
-# Sirf production dependencies install karo
-COPY package*.json ./
-RUN npm install --production
+RUN apk add --no-cache curl
 
-# Builder stage se compiled code copy karo
+ENV NODE_ENV=production
+
+COPY package*.json ./
+RUN npm ci --omit=dev
+
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder /app/prisma ./prisma
 
-# Agar static files ya kuch aur hai to copy kar lo (optional)
-# COPY . .
+EXPOSE 8080
 
-EXPOSE 8080 
-# jo port use kar raha hai wo daal (Fastify default 3000 hi hota hai mostly) 
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD curl -f http://127.0.0.1:8080/ping || exit 1
 
-# Compiled JS file run karo
-CMD ["node", "dist/src/index.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/src/index.js"]

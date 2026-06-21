@@ -1,0 +1,69 @@
+{
+  "family": "taskflow-fastapi",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "executionRoleArn": "REPLACE_ECS_EXECUTION_ROLE_ARN",
+  "taskRoleArn": "REPLACE_ECS_TASK_ROLE_ARN",
+  "containerDefinitions": [
+    {
+      "name": "fastapi",
+      "image": "REPLACE_ECR_REGISTRY/taskflow-fastapi:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 8000,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "AI_PROVIDER",
+          "value": "gemini"
+        },
+        {
+          "name": "AI_MODEL",
+          "value": "gemini-2.0-flash"
+        },
+        {
+          "name": "AI_MAX_REQUESTS_PER_USER_PER_DAY",
+          "value": "50"
+        },
+        {
+          "name": "CORS_ORIGINS",
+          "value": "REPLACE_CORS_ORIGINS"
+        }
+      ],
+      "secrets": [
+        {
+          "name": "DATABASE_URL",
+          "valueFrom": "REPLACE_SECRET_DATABASE_URL_ARN"
+        },
+        {
+          "name": "JWT_SECRET",
+          "valueFrom": "REPLACE_SECRET_JWT_ARN"
+        },
+        {
+          "name": "GEMINI_API_KEY",
+          "valueFrom": "REPLACE_SECRET_GEMINI_ARN"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/taskflow-fastapi",
+          "awslogs-region": "REPLACE_AWS_REGION",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "healthCheck": {
+        "command": ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 90
+      }
+    }
+  ]
+}
